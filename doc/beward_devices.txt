@@ -1,0 +1,15 @@
+Beward DS05 and DS06
+--------------------
+
+SoC: hi3518cv100
+
+GPIO:
+ * 3 — light sensor
+ * 4 — call button
+ * 6 — IR cut
+ * 43 — night lighting
+
+Sensors:
+ * DS05 — imx138 on i2c
+ * DS06 — imx225 on i2c
+
