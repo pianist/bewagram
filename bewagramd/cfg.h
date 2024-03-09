@@ -9,8 +9,13 @@ struct Device_GPIOs {
     int night_illumination;
 };
 
+struct ButtonConfig {
+    char http_GET_log[256];
+};
+
 struct DaemonConfig {
     struct Device_GPIOs gpio;
+    struct ButtonConfig button;
 };
 
 int cfg_daemon_read(const char* fname, struct DaemonConfig* sc);

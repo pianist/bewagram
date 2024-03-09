@@ -7,6 +7,7 @@
 #include <stdlib.h>
 
 #define SECTION_gpio        1
+#define SECTION_button      2
 
 static int __cfg_daemon_current_section = 0;
 static char __cfg_daemon_error_key[32];
@@ -27,6 +28,7 @@ const char* cfg_daemon_read_error_key()
 static int __cfg_daemon_read_section_cb(const char* s)
 {
     ADD_SECTION(gpio)
+    ADD_SECTION(button)
 
     snprintf(__cfg_daemon_error_value, 256, "%s", s);
     return CFG_PROC_WRONG_SECTION;
@@ -66,6 +68,13 @@ static int __cfg_daemon_read_keyval_cb_gpio(const char* k, const char* v)
     return CFG_PROC_KEY_BAD;
 }
 
+static int __cfg_daemon_read_keyval_cb_button(const char* k, const char* v)
+{
+    KEYVAL_PARAM_COPY_STR("http_GET_log", __current_dc->button.http_GET_log, 256);
+
+    snprintf(__cfg_daemon_error_key, 256, "%s", k);
+    return CFG_PROC_KEY_BAD;
+}
 
 #define KEYVAL_CASE(section) case SECTION_##section: { return __cfg_daemon_read_keyval_cb_##section(k, v); }
 
@@ -74,6 +83,7 @@ static int __cfg_daemon_read_keyval_cb(const char* k, const char* v)
     switch (__cfg_daemon_current_section)
     {
         KEYVAL_CASE(gpio)
+        KEYVAL_CASE(button)
     }
     return CFG_PROC_OK;
 }

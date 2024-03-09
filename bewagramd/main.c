@@ -1,4 +1,5 @@
 #include <evgpio/evgpio.h>
+#include <evcurl/evcurl.h>
 #include <ev.h>
 #include "cfg.h"
 #include <pthread.h>
@@ -13,6 +14,8 @@
 #include "call_button.h"
 
 int stop_flag = 0;
+evcurl_processor_t* g_evcurl_proc = 0;
+struct DaemonConfig g_dcfg;
 
 void action_on_signal(int signum)
 {
@@ -46,8 +49,8 @@ void print_error(int ret)
 
 static void timeout_cb(struct ev_loop *loop, ev_timer* w, int revents)
 {
-    fprintf(stderr, "DBG: active gpio watchers: ");
-    evgpio_watcher_print_list();
+    //fprintf(stderr, "DBG: active gpio watchers: ");
+    //evgpio_watcher_print_list();
     ev_break(EV_A_ EVBREAK_ONE);
 
     ev_timer_again(loop, w);
@@ -64,8 +67,7 @@ int main(int argc, char** argv)
     const char* cfg_fname = (argc > 1) ? argv[1] : "/etc/bewagramd.ini";
     log_info("Starting, loading config from %s", cfg_fname);
 
-    struct DaemonConfig dcfg;
-    int ret = cfg_daemon_read(cfg_fname, &dcfg);
+    int ret = cfg_daemon_read(cfg_fname, &g_dcfg);
     if (ret < 0)
     {
         print_error(ret);
@@ -75,8 +77,9 @@ int main(int argc, char** argv)
     signal(SIGINT, action_on_signal);
 
     struct ev_loop* loop = ev_loop_new(EVBACKEND_EPOLL | EVFLAG_NOENV);
+    g_evcurl_proc = evcurl_create(loop);
 
-    init_button_evloop(loop, &dcfg);
+    init_button_evloop(loop, &g_dcfg);
 
     ev_timer timeout_watcher;
     ev_timer_init(&timeout_watcher, timeout_cb, 1., 0.);
@@ -89,6 +92,10 @@ int main(int argc, char** argv)
         if (stop_flag) break;
     }
     while (ret);
+
+    // wait all threads
+    evcurl_destroy(g_evcurl_proc);
+    g_evcurl_proc = 0;
 
     log_info("The end!");
 

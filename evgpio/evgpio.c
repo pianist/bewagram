@@ -25,7 +25,7 @@ static void __gpio_cb(struct ev_loop *loop, ev_io* _w, int revents)
     char x = '?';
     int r1 = lseek(w->_ev_io.fd, 0, SEEK_SET);
     int r2 = read(w->_ev_io.fd, &x, sizeof(char));
-    fprintf(stderr, "\tr1=%d, r2=%d\n", r1, r2);
+    //fprintf(stderr, "\tr1=%d, r2=%d\n", r1, r2);
 
     if (r1 < 0 || r2 < 0)
     {
