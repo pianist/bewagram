@@ -20,7 +20,7 @@ static void __gpio_cb(struct ev_loop *loop, ev_io* _w, int revents)
 {
     evgpio_watcher_s* w = (evgpio_watcher_s*)_w;
 
-    fprintf(stderr, "event on fd = %d (GPIO %d): 0x%x\n", w->_ev_io.fd, w->gpio_num, revents);
+    //fprintf(stderr, "event on fd = %d (GPIO %d): 0x%x\n", w->_ev_io.fd, w->gpio_num, revents);
 
     char x = '?';
     int r1 = lseek(w->_ev_io.fd, 0, SEEK_SET);
