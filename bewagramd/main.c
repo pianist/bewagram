@@ -61,13 +61,26 @@ static void timeout_cb(struct ev_loop *loop, ev_timer* w, int revents)
 
 int main(int argc, char** argv)
 {
-    if (argc > 1 && !strcmp(argv[1], "help"))
+    int no_deamon_mode = 0;
+    int cfg_default = 1;
+
+    if (argc > 1)
     {
-        fprintf(stderr, "Usage: bewagramd config.ini");
-        return -1;
+        if (!strcmp(argv[1], "help"))
+        {
+            fprintf(stderr, "Usage: bewagramd [--no-daemon] config.ini");
+            return -1;
+        }
+
+        if (!strcmp(argv[1], "--no-daemon"))
+        {
+            no_deamon_mode = 1;
+            if (argc > 2) cfg_default = 0;
+        }
+        
     }
 
-    const char* cfg_fname = (argc > 1) ? argv[1] : "/etc/bewagramd.ini";
+    const char* cfg_fname = (cfg_default) ? "/etc/bewagramd.ini" : argv[argc - 1];
     log_info("Starting, loading config from %s", cfg_fname);
 
     int ret = cfg_daemon_read(cfg_fname, &g_dcfg);
@@ -75,6 +88,16 @@ int main(int argc, char** argv)
     {
         print_cfg_error(ret);
         return ret;
+    }
+
+    if (!no_deamon_mode)
+    {
+        char buf[128];
+        snprintf(buf, 128, "/tmp/bewagram.log");
+        log_info("Daemonize and log to %s", buf);
+        log_create(buf, LOG_info);
+
+        if (fork()) exit(0);
     }
 
     ret = hitiny_MPI_SYS_Init();
@@ -85,6 +108,7 @@ int main(int argc, char** argv)
     }
 
     signal(SIGINT, action_on_signal);
+    signal(SIGTERM, action_on_signal);
 
     struct ev_loop* loop = ev_loop_new(EVBACKEND_EPOLL | EVFLAG_NOENV);
     g_evcurl_proc = evcurl_create(loop);

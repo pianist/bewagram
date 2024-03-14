@@ -28,6 +28,6 @@ target_link_libraries(test_evcurl evcurl ${CURL_LIBRARY} libevx)
 add_executable(test_watcher_gpio tests/test_watcher_gpio.c)
 target_link_libraries(test_watcher_gpio evgpio libevx)
 
-add_executable(bewadgrad bewagramd/main.c bewagramd/cfg.c bewagramd/call_button.c)
-target_link_libraries(bewadgrad aux cfg hitiny evcurl ${CURL_LIBRARY} evgpio libevx)
+add_executable(bewagramd bewagramd/main.c bewagramd/cfg.c bewagramd/call_button.c)
+target_link_libraries(bewagramd aux cfg hitiny evcurl ${CURL_LIBRARY} evgpio libevx)
 
