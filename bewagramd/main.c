@@ -11,6 +11,9 @@
 #include <signal.h>
 #include <unistd.h>
 #include <aux/logger.h>
+#include <hitiny/hitiny_sys.h>
+#include <hitiny/hitiny_aio.h>
+
 #include "call_button.h"
 
 int stop_flag = 0;
@@ -23,7 +26,7 @@ void action_on_signal(int signum)
     stop_flag = 1;
 }
 
-void print_error(int ret)
+void print_cfg_error(int ret)
 {
     if (-1 == ret)
     {
@@ -70,7 +73,14 @@ int main(int argc, char** argv)
     int ret = cfg_daemon_read(cfg_fname, &g_dcfg);
     if (ret < 0)
     {
-        print_error(ret);
+        print_cfg_error(ret);
+        return ret;
+    }
+
+    ret = hitiny_MPI_SYS_Init();
+    if (ret < 0)
+    {
+        log_error("hitiny_MPI_AO_Init() failed: 0x%X", ret);
         return ret;
     }
 
@@ -96,6 +106,7 @@ int main(int argc, char** argv)
     // wait all threads
     evcurl_destroy(g_evcurl_proc);
     g_evcurl_proc = 0;
+    hitiny_MPY_SYS_Done();
 
     log_info("The end!");
 

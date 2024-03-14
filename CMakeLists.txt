@@ -20,6 +20,7 @@ add_library(cfg STATIC cfg/common.c cfg/sensor_config.c cfg/sensor_cfg_print.c)
 add_library(libevx STATIC libev/ev.c)
 add_library(evcurl STATIC evcurl/evcurl.c)
 add_library(evgpio STATIC evgpio/evgpio.c)
+add_library(hitiny STATIC hitiny/hitiny_sys.c hitiny/hitiny_aio.c hitiny/hitiny_ao.c)
 
 add_executable(test_evcurl tests/test_evcurl.c)
 target_link_libraries(test_evcurl evcurl ${CURL_LIBRARY} libevx)
@@ -28,5 +29,5 @@ add_executable(test_watcher_gpio tests/test_watcher_gpio.c)
 target_link_libraries(test_watcher_gpio evgpio libevx)
 
 add_executable(bewadgrad bewagramd/main.c bewagramd/cfg.c bewagramd/call_button.c)
-target_link_libraries(bewadgrad aux cfg evcurl ${CURL_LIBRARY} evgpio libevx)
+target_link_libraries(bewadgrad aux cfg hitiny evcurl ${CURL_LIBRARY} evgpio libevx)
 

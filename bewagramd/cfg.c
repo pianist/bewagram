@@ -71,6 +71,7 @@ static int __cfg_daemon_read_keyval_cb_gpio(const char* k, const char* v)
 static int __cfg_daemon_read_keyval_cb_button(const char* k, const char* v)
 {
     KEYVAL_PARAM_COPY_STR("http_GET_log", __current_dc->button.http_GET_log, 256);
+    KEYVAL_PARAM_COPY_STR("music", __current_dc->button.music, 256);
 
     snprintf(__cfg_daemon_error_key, 256, "%s", k);
     return CFG_PROC_KEY_BAD;

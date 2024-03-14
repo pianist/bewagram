@@ -11,6 +11,7 @@ struct Device_GPIOs {
 
 struct ButtonConfig {
     char http_GET_log[256];
+    char music[256];
 };
 
 struct DaemonConfig {
