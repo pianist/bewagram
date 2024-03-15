@@ -216,10 +216,10 @@ extern struct DaemonConfig g_dcfg;
 
 static void test_req_cb(evcurl_req_result_t* res)
 {
-    printf("Req tst DONE: %d\n", res->result);
-    printf("    effective URL: %s\n", res->effective_url);
-    printf("    %ld\n", res->response_code);
-    printf("    Content-Type: %s\n", res->content_type ? res->content_type : "(none)");
+    log_info("Req tst DONE: %d\n", res->result);
+    log_info("    effective URL: %s\n", res->effective_url);
+    log_info("    %ld\n", res->response_code);
+    log_info("    Content-Type: %s\n", res->content_type ? res->content_type : "(none)");
 }
 
 static void call_button_cb(int gpio_num, char state)
@@ -257,7 +257,7 @@ int init_button_evloop(struct ev_loop* loop, const struct DaemonConfig* dc)
     int ret = evgpio_watcher_init(loop, dc->gpio.call_button, call_button_cb);
     if (ret < 0)
     {
-        fprintf(stderr, "Can't open gpio %d: %s\n", dc->gpio.call_button, strerror(errno));
+        log_error("Can't open gpio %d: %s\n", dc->gpio.call_button, strerror(errno));
         return -1;
     }
 
