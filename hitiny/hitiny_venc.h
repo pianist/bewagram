@@ -24,5 +24,8 @@ int hitiny_MPI_VENC_Query(VENC_CHN VeChn, VENC_CHN_STAT_S *pstStat);
 int hitiny_MPI_VENC_GetStream(VENC_CHN VeChn, VENC_STREAM_S *pstStream, HI_BOOL bBlockFlag);
 int hitiny_MPI_VENC_ReleaseStream(VENC_CHN VeChn, VENC_STREAM_S *pstStream);
 
+int hitiny_MPI_VENC_SetColor2GreyConf(const GROUP_COLOR2GREY_CONF_S *pstGrpColor2GreyConf);
+int hitiny_MPI_VENC_SetGrpColor2Grey(VENC_GRP VeGroup, const GROUP_COLOR2GREY_S *pstGrpColor2Grey);
+
 #endif // __platform_x_mpi_venc_h__
 
