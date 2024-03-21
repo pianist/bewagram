@@ -298,7 +298,7 @@ int cfg_sensor_read(const char* fname, struct SensorConfig* sc)
     __cfg_sensor_current_section = 0;
     __current_sc = sc;
 
-    memset(&sc, 0, sizeof(struct SensorConfig));
+    memset(sc, 0, sizeof(struct SensorConfig));
 
     return cfg_proc_read(fname, __cfg_sensor_read_section_cb, __cfg_sensor_read_keyval_cb);
 }

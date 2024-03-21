@@ -8,6 +8,7 @@
 
 #define SECTION_gpio        1
 #define SECTION_button      2
+#define SECTION_snap        3
 
 static int __cfg_daemon_current_section = 0;
 static char __cfg_daemon_error_key[32];
@@ -29,6 +30,7 @@ static int __cfg_daemon_read_section_cb(const char* s)
 {
     ADD_SECTION(gpio)
     ADD_SECTION(button)
+    ADD_SECTION(snap)
 
     snprintf(__cfg_daemon_error_value, 256, "%s", s);
     return CFG_PROC_WRONG_SECTION;
@@ -56,6 +58,23 @@ struct DaemonConfig* __current_dc = 0;
         return CFG_PROC_VALUE_BAD;                                      \
     }
 
+#define KEYVAL_PARAM_ENUM(key, dest, pvs) if (strcasecmp(key, k) == 0) {        \
+        unsigned n = 0;                                                         \
+        while (pvs[n]) {                                                        \
+            if (strcmp(pvs[n], v) == 0) {                                       \
+                dest = n; return CFG_PROC_OK;                                   \
+            }                                                                   \
+            n++;                                                                \
+        }                                                                       \
+        char* endptr;                                                           \
+        unsigned x = strtoul(v, &endptr, 10);                                   \
+        if (!*endptr && (n > x)) {                                              \
+            dest = x; return CFG_PROC_OK;                                       \
+        }                                                                       \
+        snprintf(__cfg_daemon_error_key, 256, "%s", k);                         \
+        snprintf(__cfg_daemon_error_value, 256, "%s", v);                       \
+        return CFG_PROC_VALUE_BAD;                                              \
+    }
 
 static int __cfg_daemon_read_keyval_cb_gpio(const char* k, const char* v)
 {
@@ -77,6 +96,18 @@ static int __cfg_daemon_read_keyval_cb_button(const char* k, const char* v)
     return CFG_PROC_KEY_BAD;
 }
 
+const char *cfg_daemon_vals_vpss_chn[] = { "VPSS_CHN_CHN0", "VPSS_CHN_CHN1", "VPSS_CHN_BYPASS", 0 };
+
+static int __cfg_daemon_read_keyval_cb_snap(const char* k, const char* v)
+{
+    KEYVAL_PARAM_UL_dec("width", __current_dc->snap.width)
+    KEYVAL_PARAM_UL_dec("height", __current_dc->snap.height)
+    KEYVAL_PARAM_ENUM("vpss_chn", __current_dc->snap.vpss_chn, cfg_daemon_vals_vpss_chn);
+
+    snprintf(__cfg_daemon_error_key, 256, "%s", k);
+    return CFG_PROC_KEY_BAD;
+}
+
 #define KEYVAL_CASE(section) case SECTION_##section: { return __cfg_daemon_read_keyval_cb_##section(k, v); }
 
 static int __cfg_daemon_read_keyval_cb(const char* k, const char* v)
@@ -85,6 +116,7 @@ static int __cfg_daemon_read_keyval_cb(const char* k, const char* v)
     {
         KEYVAL_CASE(gpio)
         KEYVAL_CASE(button)
+        KEYVAL_CASE(snap)
     }
     return CFG_PROC_OK;
 }
@@ -94,7 +126,9 @@ int cfg_daemon_read(const char* fname, struct DaemonConfig* dc)
     __cfg_daemon_current_section = 0;
     __current_dc = dc;
 
-    memset(&dc, 0, sizeof(struct DaemonConfig));
+    memset(dc, 0, sizeof(struct DaemonConfig));
+    
+    dc->snap.vpss_chn = VPSS_CHN_UNSET;
 
     return cfg_proc_read(fname, __cfg_daemon_read_section_cb, __cfg_daemon_read_keyval_cb);
 }

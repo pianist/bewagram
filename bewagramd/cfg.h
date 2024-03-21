@@ -14,9 +14,26 @@ struct ButtonConfig {
     char music[256];
 };
 
+enum VPSS_CHN_E
+{
+    VPSS_CHN_UNSET  = -1,
+    VPSS_CHN_CHN0   = 0,
+    VPSS_CHN_CHN1   = 1,
+    VPSS_CHN_BYPASS = 2,
+};
+
+extern const char *cfg_daemon_vals_vpss_chn[];
+
+struct SnapConfig {
+    unsigned width;
+    unsigned height;
+    enum VPSS_CHN_E vpss_chn;
+};
+
 struct DaemonConfig {
     struct Device_GPIOs gpio;
     struct ButtonConfig button;
+    struct SnapConfig snap;
 };
 
 int cfg_daemon_read(const char* fname, struct DaemonConfig* sc);

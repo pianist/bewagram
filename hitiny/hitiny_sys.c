@@ -24,11 +24,12 @@ int hitiny_MPI_SYS_Init()
     return ioctl(fd_sys, 0x5900);
 }
 
-void hitiny_MPY_SYS_Done()
+void hitiny_MPI_SYS_Done()
 {
     if (fd_sys != -1)
     {
-        ioctl(fd_sys, 0x5901);
+// We do NOT stop sys, because other daemons are working hard, we are not main daemon
+//        ioctl(fd_sys, 0x5901);
         close(fd_sys);
         fd_sys = -1;
     }
@@ -40,7 +41,7 @@ typedef struct hitiny_sys_bind_param_s
     MPP_CHN_S dest;
 } hitiny_sys_bind_param_t;
 
-int hitiny_sys_bind_VPSS_GROUP(int vpss_dev_id, int vpss_chn_id, int grp_dev_id, int grp_chn_id)
+int hitiny_sys_bind_VPSS_GROUP(int vpss_dev_id, int vpss_chn_id, int grp_chn_id)
 {
     if (fd_sys < 0)
     {
@@ -54,13 +55,13 @@ int hitiny_sys_bind_VPSS_GROUP(int vpss_dev_id, int vpss_chn_id, int grp_dev_id,
     param.src.s32ChnId = vpss_chn_id;
 
     param.dest.enModId = HI_ID_GROUP;
-    param.dest.s32DevId = grp_dev_id;
-    param.dest.s32ChnId = grp_chn_id;
+    param.dest.s32DevId = grp_chn_id;
+    param.dest.s32ChnId = 0;
 
     return ioctl(fd_sys, 0x40185907, &param);
 }
 
-int hitiny_sys_unbind_VPSS_GROUP(int vpss_dev_id, int vpss_chn_id, int grp_dev_id, int grp_chn_id)
+int hitiny_sys_unbind_VPSS_GROUP(int vpss_dev_id, int vpss_chn_id, int grp_chn_id)
 {
     if (fd_sys < 0)
     {
@@ -74,8 +75,8 @@ int hitiny_sys_unbind_VPSS_GROUP(int vpss_dev_id, int vpss_chn_id, int grp_dev_i
     param.src.s32ChnId = vpss_chn_id;
 
     param.dest.enModId = HI_ID_GROUP;
-    param.dest.s32DevId = grp_dev_id;
-    param.dest.s32ChnId = grp_chn_id;
+    param.dest.s32DevId = grp_chn_id;
+    param.dest.s32ChnId = 0;
 
     return ioctl(fd_sys, 0x40185908, &param);
 }

@@ -13,8 +13,10 @@
 #include <aux/logger.h>
 #include <hitiny/hitiny_sys.h>
 #include <hitiny/hitiny_aio.h>
+#include <hitiny/hitiny_venc.h>
 
 #include "call_button.h"
+#include "snap.h"
 
 int stop_flag = 0;
 evcurl_processor_t* g_evcurl_proc = 0;
@@ -115,6 +117,16 @@ int main(int argc, char** argv)
 
     init_button_evloop(loop, &g_dcfg);
 
+    hitiny_MPI_VENC_Init();
+    ret = init_snap_machine(loop, &g_dcfg);
+    if (ret)
+    {
+        log_crit("SNAP machine critical (0x%x), exit", ret);
+        hitiny_MPI_VENC_Done();
+        exit(-1);
+    }
+
+
     ev_timer timeout_watcher;
     ev_timer_init(&timeout_watcher, timeout_cb, 1., 0.);
     timeout_watcher.repeat = 2.;
@@ -130,7 +142,11 @@ int main(int argc, char** argv)
     // wait all threads
     evcurl_destroy(g_evcurl_proc);
     g_evcurl_proc = 0;
-    hitiny_MPY_SYS_Done();
+
+    done_snap_machine(&g_dcfg);
+    hitiny_MPI_VENC_Done();
+
+    hitiny_MPI_SYS_Done();
 
     log_info("The end!");
 
