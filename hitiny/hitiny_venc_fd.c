@@ -104,10 +104,11 @@ static int open_grp_fd(VENC_GRP VeGrp)
     }
 
     unsigned req_data = VeGrp;
-    if (ioctl(_new_grp_fd, 0x40044703u, &req_data))
+    int ret = ioctl(_new_grp_fd, 0x40044703, &req_data);
+    if (ret)
     {
         close(_new_grp_fd);
-        log_error("ERROR: can't ioctl(0x40044518u) for group %u", VeGrp);
+        log_error("ERROR: can't ioctl(0x40044518) for group %u: err 0x%x", VeGrp, ret);
 
         return -1;
     }
