@@ -123,9 +123,9 @@ int main(int argc, char** argv)
     {
         log_crit("SNAP machine critical (0x%x), exit", ret);
         hitiny_MPI_VENC_Done();
+        hitiny_MPI_SYS_Done();
         exit(-1);
     }
-
 
     ev_timer timeout_watcher;
     ev_timer_init(&timeout_watcher, timeout_cb, 1., 0.);

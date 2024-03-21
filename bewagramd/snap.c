@@ -2,6 +2,7 @@
 #include "aux/logger.h"
 #include <hitiny/hitiny_venc.h>
 #include <hitiny/hitiny_sys.h>
+#include <stdlib.h>
 
 
 #define CHECK_VALUE_BETWEEN(v, s, m, M) do                                                          \
@@ -14,7 +15,8 @@
                                         } while(0);
                                             
 #define TMP_VALUES_BUFFER_SZ 1024
-#define SNAP_VENC_CHN_ID 63
+#define SNAP_VENC_GRP_ID 5
+#define SNAP_VENC_CHN_ID 11
 
 static int init_snap_machine_checkcfg(const struct DaemonConfig* dc)
 {
@@ -40,13 +42,34 @@ static int init_snap_machine_checkcfg(const struct DaemonConfig* dc)
     return 0;
 }
 
+ev_io venc_snap_ev_io;
+
+static void __venc_snap_cb(struct ev_loop *loop, ev_io* _w, int revents)
+{
+    log_info("event on fd = VENC: 0x%x ()", revents);
+    hitiny_MPI_VENC_StopRecvPic(SNAP_VENC_CHN_ID);
+
+    VENC_CHN_STAT_S stStat;
+    VENC_STREAM_S stStream;
+
+    hitiny_MPI_VENC_Query(SNAP_VENC_CHN_ID, &stStat);
+    stStream.pstPack = (VENC_PACK_S*)malloc(sizeof(VENC_PACK_S) * stStat.u32CurPacks);
+    stStream.u32PackCount = stStat.u32CurPacks;
+    hitiny_MPI_VENC_GetStream(SNAP_VENC_CHN_ID, &stStream, HI_FALSE);
+    hitiny_MPI_VENC_ReleaseStream(SNAP_VENC_CHN_ID, &stStream);
+    free(stStream.pstPack);
+    stStream.pstPack = NULL;
+
+    log_info("DONE ONE JPEG");
+}
+
 int init_snap_machine(struct ev_loop* loop, const struct DaemonConfig* dc)
 {
     if (init_snap_machine_checkcfg(dc)) return -1;
 
     log_info("SNAP machine init");
 
-    int s32Ret = hitiny_MPI_VENC_CreateGroup(0);
+    int s32Ret = hitiny_MPI_VENC_CreateGroup(SNAP_VENC_GRP_ID);
     if (HI_SUCCESS != s32Ret)
     {
         log_error("MPI_VENC_CreateGroup failed with %#x!", s32Ret);
@@ -71,47 +94,58 @@ int init_snap_machine(struct ev_loop* loop, const struct DaemonConfig* dc)
     s32Ret = hitiny_MPI_VENC_CreateChn(SNAP_VENC_CHN_ID, &stVencChnAttr);
     if (HI_SUCCESS != s32Ret) {
         log_error("HI_MPI_VENC_CreateChn failed with %#x!", s32Ret);
-        hitiny_MPI_VENC_DestroyGroup(0);
+        hitiny_MPI_VENC_DestroyGroup(SNAP_VENC_GRP_ID);
         return s32Ret;
     }
 
-    s32Ret = hitiny_MPI_VENC_RegisterChn(0, SNAP_VENC_CHN_ID);
+    s32Ret = hitiny_MPI_VENC_RegisterChn(SNAP_VENC_GRP_ID, SNAP_VENC_CHN_ID);
     if (HI_SUCCESS != s32Ret) {
         log_error("HI_MPI_VENC_RegisterChn failed with %#x!", s32Ret);
         hitiny_MPI_VENC_DestroyChn(SNAP_VENC_CHN_ID);
-        hitiny_MPI_VENC_DestroyGroup(0);
+        hitiny_MPI_VENC_DestroyGroup(SNAP_VENC_GRP_ID);
         return s32Ret;
     }
 
-    s32Ret = hitiny_sys_bind_VPSS_GROUP(0, (int)dc->snap.vpss_chn, SNAP_VENC_CHN_ID);
+    s32Ret = hitiny_sys_bind_VPSS_GROUP(0, (int)dc->snap.vpss_chn, SNAP_VENC_GRP_ID);
         if (HI_SUCCESS != s32Ret) {
         log_error("BIND VPSS to GRP failed with %#x!", s32Ret);
         hitiny_MPI_VENC_UnRegisterChn(SNAP_VENC_CHN_ID);
         hitiny_MPI_VENC_DestroyChn(SNAP_VENC_CHN_ID);
-        hitiny_MPI_VENC_DestroyGroup(0);
+        hitiny_MPI_VENC_DestroyGroup(SNAP_VENC_GRP_ID);
         return s32Ret;
     }
 
-    s32Ret = hitiny_MPI_VENC_StartRecvPic(SNAP_VENC_CHN_ID);
-    if (HI_SUCCESS != s32Ret) {
-        log_error("HI_MPI_VENC_StartRecvPic failed with %#x!\n", s32Ret);
-        hitiny_sys_unbind_VPSS_GROUP(0, (int)dc->snap.vpss_chn, SNAP_VENC_CHN_ID);
+    int fd = hitiny_MPI_VENC_GetFd(SNAP_VENC_CHN_ID);
+    if (fd < 0)
+    {
+        log_error("HI_MPI_VENC_GetFd failed with %#x!\n", s32Ret);
+        hitiny_sys_unbind_VPSS_GROUP(0, (int)dc->snap.vpss_chn, SNAP_VENC_GRP_ID);
         hitiny_MPI_VENC_UnRegisterChn(SNAP_VENC_CHN_ID);
         hitiny_MPI_VENC_DestroyChn(SNAP_VENC_CHN_ID);
-        hitiny_MPI_VENC_DestroyGroup(0);
-        return s32Ret;
+        hitiny_MPI_VENC_DestroyGroup(SNAP_VENC_GRP_ID);
+        return fd;
     }
 
+    ev_io_init(&venc_snap_ev_io, __venc_snap_cb, fd, EV_READ);
+    ev_io_start(loop, &venc_snap_ev_io);
+
+    hitiny_MPI_VENC_StartRecvPic(SNAP_VENC_CHN_ID);
+
     return 0;
+}
+
+void snap_machine_TAKE()
+{
+    hitiny_MPI_VENC_StartRecvPic(SNAP_VENC_CHN_ID);
 }
 
 int done_snap_machine(const struct DaemonConfig* dc)
 {
     hitiny_MPI_VENC_StopRecvPic(SNAP_VENC_CHN_ID);
-    hitiny_sys_unbind_VPSS_GROUP(0, (int)dc->snap.vpss_chn, SNAP_VENC_CHN_ID);
+    hitiny_sys_unbind_VPSS_GROUP(0, (int)dc->snap.vpss_chn, SNAP_VENC_GRP_ID);
     hitiny_MPI_VENC_UnRegisterChn(SNAP_VENC_CHN_ID);
     hitiny_MPI_VENC_DestroyChn(SNAP_VENC_CHN_ID);
-    hitiny_MPI_VENC_DestroyGroup(0);
+    hitiny_MPI_VENC_DestroyGroup(SNAP_VENC_GRP_ID);
 
     return 0;
 }

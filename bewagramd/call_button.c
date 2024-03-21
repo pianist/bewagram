@@ -5,6 +5,7 @@
 #include <hitiny/hitiny_sys.h>
 #include <hitiny/hitiny_aio.h>
 #include "cfg.h"
+#include "snap.h"
 
 extern struct DaemonConfig g_dcfg;
 extern int stop_flag;
@@ -234,6 +235,7 @@ static void call_button_cb(int gpio_num, char state)
             log_info("sending log request: %s", g_dcfg.button.http_GET_log);
             evcurl_new_http_GET(g_evcurl_proc, g_dcfg.button.http_GET_log, test_req_cb);
         }
+        snap_machine_TAKE();
     }
     else
     {
