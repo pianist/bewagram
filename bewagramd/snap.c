@@ -1,5 +1,6 @@
 #include "snap.h"
 #include "aux/logger.h"
+#include <evcurl/evcurl.h>
 #include <hitiny/hitiny_venc.h>
 #include <hitiny/hitiny_sys.h>
 #include <stdlib.h>
@@ -44,6 +45,26 @@ static int init_snap_machine_checkcfg(const struct DaemonConfig* dc)
 
 ev_io venc_snap_ev_io;
 
+extern evcurl_processor_t* g_evcurl_proc;
+extern struct DaemonConfig g_dcfg;
+
+static void PUT_snap_req_end_cb(evcurl_req_result_t* res, void* src_req_data)
+{
+    log_info("PUT snap Req DONE: %d\n", res->result);
+    struct evcurl_upload_req_s* put_req = (struct evcurl_upload_req_s*)src_req_data;
+    log_info("    upload data sz was %u\n", put_req->sz_buf);
+    log_info("    effective URL: %s\n", res->effective_url);
+    log_info("    %ld\n", res->response_code);
+    log_info("    Content-Type: %s\n", res->content_type ? res->content_type : "(none)");
+
+    if (!res->sz_body) return;
+
+    log_info("\n\n%.*s\n--------------------------------------------------------------\n", (int)res->sz_body, (const char*)res->body);
+
+    free(put_req->buf);
+    free(put_req);
+}
+
 static void __venc_snap_cb(struct ev_loop *loop, ev_io* _w, int revents)
 {
     log_info("event on fd = VENC: 0x%x ()", revents);
@@ -56,6 +77,34 @@ static void __venc_snap_cb(struct ev_loop *loop, ev_io* _w, int revents)
     stStream.pstPack = (VENC_PACK_S*)malloc(sizeof(VENC_PACK_S) * stStat.u32CurPacks);
     stStream.u32PackCount = stStat.u32CurPacks;
     hitiny_MPI_VENC_GetStream(SNAP_VENC_CHN_ID, &stStream, HI_FALSE);
+
+    struct evcurl_upload_req_s* upload_data = (struct evcurl_upload_req_s*)malloc(sizeof(struct evcurl_upload_req_s));
+    upload_data->sz_buf = 0;
+    for (unsigned iii = 0; iii < stStream.u32PackCount; iii++)
+    {
+        VENC_PACK_S* pstData = &(stStream.pstPack[iii]);
+        upload_data->sz_buf += pstData->u32Len[0];
+        upload_data->sz_buf += pstData->u32Len[1];
+    }
+
+    upload_data->buf = malloc(upload_data->sz_buf);
+    upload_data->ptr = upload_data->buf;
+
+    for (unsigned iii = 0; iii < stStream.u32PackCount; iii++)
+    {
+        VENC_PACK_S* pstData = &(stStream.pstPack[iii]);
+        memcpy(upload_data->ptr, pstData->pu8Addr[0], pstData->u32Len[0]);
+        upload_data->ptr += pstData->u32Len[0];
+        memcpy(upload_data->ptr, pstData->pu8Addr[1], pstData->u32Len[1]);
+        upload_data->ptr += pstData->u32Len[1];
+    }
+
+    upload_data->ptr = upload_data->buf;
+    upload_data->url = g_dcfg.snap.http_PUT_snap_url;
+    evcurl_new_UPLOAD(g_evcurl_proc, upload_data, PUT_snap_req_end_cb);
+
+    log_info("%u from 0x%x to 0x%x", upload_data->sz_buf, upload_data->buf, upload_data->ptr);
+
     hitiny_MPI_VENC_ReleaseStream(SNAP_VENC_CHN_ID, &stStream);
     free(stStream.pstPack);
     stStream.pstPack = NULL;
@@ -139,8 +188,10 @@ void snap_machine_TAKE()
     hitiny_MPI_VENC_StartRecvPic(SNAP_VENC_CHN_ID);
 }
 
-int done_snap_machine(const struct DaemonConfig* dc)
+int done_snap_machine(struct ev_loop* loop, const struct DaemonConfig* dc)
 {
+    ev_io_stop(loop, &venc_snap_ev_io);
+
     hitiny_MPI_VENC_StopRecvPic(SNAP_VENC_CHN_ID);
     hitiny_sys_unbind_VPSS_GROUP(0, (int)dc->snap.vpss_chn, SNAP_VENC_GRP_ID);
     hitiny_MPI_VENC_UnRegisterChn(SNAP_VENC_CHN_ID);

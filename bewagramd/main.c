@@ -143,7 +143,7 @@ int main(int argc, char** argv)
     evcurl_destroy(g_evcurl_proc);
     g_evcurl_proc = 0;
 
-    done_snap_machine(&g_dcfg);
+    done_snap_machine(loop, &g_dcfg);
     hitiny_MPI_VENC_Done();
 
     hitiny_MPI_SYS_Done();

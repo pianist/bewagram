@@ -89,7 +89,7 @@ int evgpio_watcher_init(struct ev_loop* loop, int gpio_num, evgpio_watcher_cb _c
     int buf_len = snprintf(buf, 8, "%d", gpio_num);
     if (buf_len <= 0) return -1; 
 
-    snprintf(filename, MAX_PATH_LEN, "/sys/class/gpio/export", gpio_num);
+    snprintf(filename, MAX_PATH_LEN, "/sys/class/gpio/export");
     fd = open(filename, O_WRONLY);
     if (fd < 0)
     {

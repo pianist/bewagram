@@ -6,6 +6,7 @@ typedef struct evcurl_http_req_info_s
     CURL* easy;
     evcurl_processor_t* mp;
     evcurl_req_done_cb finish_cb;
+    void* src_req_data;
     evcurl_req_result_t result;
 } evcurl_http_req_info_t;
 
@@ -43,7 +44,7 @@ static void evcurl_check_multi_info(evcurl_processor_t *mp)
 
 
             conn->result.result = msg->data.result;
-            if (conn->finish_cb) conn->finish_cb(&conn->result);
+            if (conn->finish_cb) conn->finish_cb(&conn->result, conn->src_req_data);
 
             curl_multi_remove_handle(mp->multi, easy);
             curl_easy_cleanup(easy);
@@ -229,4 +230,58 @@ CURLMcode evcurl_new_http_GET(evcurl_processor_t *mp, char *url, evcurl_req_done
     rc = curl_multi_add_handle(mp->multi, conn->easy);
     return rc;
 }
+
+static size_t __upload_data_read_cb(char *buffer, size_t size, size_t nitems, void *userdata)
+{
+    evcurl_upload_req_t* req = (evcurl_upload_req_t*)userdata;
+
+    size_t cpy_sz = size * nitems;
+    size_t cpy_left = req->sz_buf - ((char*)req->ptr - (char*)req->buf);
+
+    if (cpy_left < cpy_sz) cpy_sz = cpy_left;
+
+    memcpy(buffer, req->ptr, cpy_sz);
+    req->ptr = (char*)req->ptr + cpy_sz;
+
+    return cpy_sz;
+}
+
+CURLMcode evcurl_new_UPLOAD(evcurl_processor_t *mp, evcurl_upload_req_t* req, evcurl_req_done_cb _finish_cb)
+{
+    evcurl_http_req_info_t *conn;
+    CURLMcode rc;
+
+    conn = calloc(1, sizeof(evcurl_http_req_info_t));
+
+    conn->easy = curl_easy_init();
+    if (!conn->easy) return CURLM_OUT_OF_MEMORY;
+
+    conn->mp = mp;
+    conn->finish_cb = _finish_cb;
+    conn->src_req_data = req;
+
+    curl_easy_setopt(conn->easy, CURLOPT_URL, req->url);
+
+    curl_easy_setopt(conn->easy, CURLOPT_FOLLOWLOCATION, 1);
+    curl_easy_setopt(conn->easy, CURLOPT_MAXREDIRS, 3);
+
+    curl_easy_setopt(conn->easy, CURLOPT_TIMEOUT, 30);
+    curl_easy_setopt(conn->easy, CURLOPT_CONNECTTIMEOUT, 5);
+
+    curl_easy_setopt(conn->easy, CURLOPT_UPLOAD, 1L);
+    curl_easy_setopt(conn->easy, CURLOPT_INFILESIZE, req->sz_buf);
+    curl_easy_setopt(conn->easy, CURLOPT_READFUNCTION, __upload_data_read_cb);
+
+    req->ptr = req->buf; // start READ from buf
+    curl_easy_setopt(conn->easy, CURLOPT_READDATA, req);
+
+    curl_easy_setopt(conn->easy, CURLOPT_WRITEFUNCTION, __simple_body_write_cb);
+    curl_easy_setopt(conn->easy, CURLOPT_WRITEDATA, conn);
+
+    curl_easy_setopt(conn->easy, CURLOPT_PRIVATE, conn);
+
+    rc = curl_multi_add_handle(mp->multi, conn->easy);
+    return rc;
+}
+
 

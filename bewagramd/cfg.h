@@ -28,6 +28,7 @@ struct SnapConfig {
     unsigned width;
     unsigned height;
     enum VPSS_CHN_E vpss_chn;
+    char http_PUT_snap_url[256];
 };
 
 struct DaemonConfig {

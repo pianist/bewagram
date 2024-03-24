@@ -215,12 +215,12 @@ void* playmusic_play_th_proc(void* p)
 extern evcurl_processor_t* g_evcurl_proc;
 extern struct DaemonConfig g_dcfg;
 
-static void test_req_cb(evcurl_req_result_t* res)
+static void test_req_cb(evcurl_req_result_t* res, void *src_req_data)
 {
-    log_info("Req tst DONE: %d\n", res->result);
-    log_info("    effective URL: %s\n", res->effective_url);
+    log_info("Req tst DONE: %d", res->result);
+    log_info("    effective URL: %s", res->effective_url);
     log_info("    %ld\n", res->response_code);
-    log_info("    Content-Type: %s\n", res->content_type ? res->content_type : "(none)");
+    log_info("    Content-Type: %s", res->content_type ? res->content_type : "(none)");
 }
 
 static void call_button_cb(int gpio_num, char state)

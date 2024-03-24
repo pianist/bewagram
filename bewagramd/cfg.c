@@ -103,6 +103,7 @@ static int __cfg_daemon_read_keyval_cb_snap(const char* k, const char* v)
     KEYVAL_PARAM_UL_dec("width", __current_dc->snap.width)
     KEYVAL_PARAM_UL_dec("height", __current_dc->snap.height)
     KEYVAL_PARAM_ENUM("vpss_chn", __current_dc->snap.vpss_chn, cfg_daemon_vals_vpss_chn);
+    KEYVAL_PARAM_COPY_STR("http_PUT_snap_url", __current_dc->snap.http_PUT_snap_url, 256);
 
     snprintf(__cfg_daemon_error_key, 256, "%s", k);
     return CFG_PROC_KEY_BAD;
