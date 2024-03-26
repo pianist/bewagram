@@ -1,0 +1,62 @@
+Изучение firmware
+=================
+
+UART на устройстве распаян, можно сразу попасть в uboot.
+
+Команды в uboot для сохранения стоковой прошивки:
+```
+setenv ipaddr 192.168.x.u
+setenv serverip 192.168.x.s
+mw.b 0x82000000 0xff 0x1000000
+sf probe 0; sf read 0x82000000 0x0 0x1000000
+tftp 0x82000000 backup-beward-ds06-poe.bin 0x1000000
+```
+
+x.u — IP адрес, который может взять устройство себе.
+x.s — IP адрес tftp сервераб на который положить сохраненную прошивку.
+
+Также рекомендуется сразу сохранить printenv, он может быть полезен.
+
+```
+hisilicon # printenv
+bootdelay=1
+baudrate=115200
+bootfile="uImage"
+ethaddr=00:01:02:03:04:05
+filesize=90000
+fileaddr=82000000
+gatewayip=192.168.55.1
+netmask=255.255.255.0
+serverip=192.168.55.252
+ipaddr=192.168.55.100
+bootargs=mem=64M console=ttyAMA0,115200 root=/dev/mtdblock1 rootfstype=jffs2 mtdparts=hi_sfc:3M(boot),12M(rootfs),1M(param)
+bootcmd=sf probe 0;sf read 0x82000000 0x80000 0x280000;bootm 0x82000000
+stdin=serial
+stdout=serial
+stderr=serial
+verify=n
+ver=U-Boot 2010.06 (Jan 09 2013 - 13:05:11)
+
+Environment size: 486/262140 bytes
+```
+
+Сброс пароля в стоковой прошивке
+--------------------------------
+
+Операция относительно безопасная, но делать аккуратно! Просто надо дописать к вашему bootargs init=/bin/sh, у меня так:
+
+```
+setenv bootargs 'mem=64M console=ttyAMA0,115200 root=/dev/mtdblock1 rootfstype=jffs2 mtdparts=hi_sfc:3M(boot),12M(rootfs),1M(param) init=/bin/sh
+```
+
+Проверяем через printenv, далее saveenv, reset и прошивка при загрузке вывалится в консоль. Там работает passwd, сбрасываем на нужный нам пароль. Перезапускаем, опять в uboot, возвращаем старый bootargs, загружаемся в прошивку, там уже можно залогиниться спокойно в консоль.
+
+В штатной прошивке есть telnetd, можно запустить и далее работать без UART.
+
+Изучение стоковой прошивки
+--------------------------
+
+Уже находясь в консоли стоковой прошивки можно запустить ipctool, который 
+
+
+

@@ -1,0 +1,56 @@
+/tmp # cat /proc/umap/vi 
+
+[VIU] Version: [Hi3518_MPP_V1.0.A.0 ], Build Time: [Apr  1 2015, 19:36:33]
+
+-----MODULE PARAM--------------------------------------------------------------
+detect_err_frame drop_err_frame stop_int_level  max_cas_gap
+               0              0              0        28000
+
+-----VI DEV ATTR---------------------------------------------------------------
+ Dev   IntfM  WkM  ComMsk0  ComMsk1 ScanM AD0 AD1 AD2 AD3   Seq   DPath DType DRev
+   0      DC 1Mux fff00000        0     P  -1  -1  -1  -1  YUYV     ISP   RGB    N
+
+-----VI HIGH DEV ATTR---------------------------------------------------------------
+ Dev  InputM  WkM  ComMsk0  ComMsk1 ScanM AD0 AD1 AD2 AD3   Seq CombM CompM ClkM  Fix FldP   DPath DType DRev
+
+-----VI PHYCHN ATTR------------------------------------------------------------
+ PhyChn CapX CapY  CapW  CapH  DstW  DstH CapSel Mirror Flip IntEn PixFom SrcRat DstRat
+      0    0    0  1280   960  1280   960   both      N    N     Y  sp420     25     25
+
+-----VI PHYCHN STATUS 1----------------------------------------------------------
+ PhyChn  Dev      IntCnt  VbFail  LosInt  TopLos  BotLos BufCnt  IntT  SendT  Field  Stride
+      0    0       68078       0       2       0       2      2   560    427    frm    1280
+
+-----VI PHYCHN STATUS 2---------------------------------------------------------
+ PhyChn MaxIntT IntGapT MaxGapT OverCnt LIntCnt  ThrCnt AutoDis CasAutD  TmgErr      ccErrN    IntRat
+      0     738   39966   40482     782       0       1       0       0       0           2        25
+
+-----VI OTHER ATTR------------------------------------------------------------
+    LDC   Mode  Ratio  COffX  COffY Enable
+     --    All      0      0      0      0
+
+  Flash   Mode StartTime  DuraTime  InterVal CapIdx Enable  FlashedNum
+     --   Once         0         0         0      0      0           0
+
+    CSC   Type HueVal  ContrVal   LumaVal  StatuVal
+     --    709     50        50        50        50
+
+-----VI EXTCHN ATTR------------------------------------------------------------
+ ExtChn BindChn  DstW  DstH PixFom SrcRat DstRat
+      1       0   320   240  sp420     25     25
+
+-----VI CHN STATUS-------------------------------------------------------------
+ ViChn   bEnUsrP   FrmTime   FrmRate     SendCnt      SwLost    Rotate  422to420
+     0         N     39966        25       68076           0      NONE         N
+     1         N     39966        25       68076           0      NONE         N
+
+-----VI CHN CALL DSU STATUS 1-------------------------------------------------
+ ViChn   UsrBgnNOk   UsrCancel    UsrEndOk     UsrCbOk     CvrBgnNOk   CvrCancel    CvrEndOk     CvrCbOk
+
+-----VI CHN CALL DSU STATUS 2-------------------------------------------------
+ ViChn   OsdBgnNOk   OsdCancel    OsdEndOk     OsdCbOk      ScaleNOk   SclCancel    SclEndOk     SclCbOk
+     1           0           0           0           0             0           0       68076       68076
+
+-----VI CHN CALL DSU STATUS 3-------------------------------------------------
+ ViChn   RotateNOk   RotCancel    RotEndOk     RotCbOk        LDCNOk   LDCCancel    LDCEndOk     LDCCbOk
+
