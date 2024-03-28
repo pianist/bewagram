@@ -4,7 +4,7 @@
 #include <hitiny/hitiny_venc.h>
 #include <hitiny/hitiny_sys.h>
 #include <stdlib.h>
-
+#include <time.h>
 
 #define CHECK_VALUE_BETWEEN(v, s, m, M) do                                                          \
                                         {                                                           \
@@ -115,6 +115,8 @@ static struct evcurl_upload_req_s* snap_get_upload_data()
     return upload_data;
 }
 
+static time_t last_snap_tm = 0;
+
 static void __venc_snap_cb(struct ev_loop *loop, ev_io* _w, int revents)
 {
     log_info("event on fd = VENC: 0x%x ()", revents);
@@ -134,6 +136,17 @@ static void __venc_snap_cb(struct ev_loop *loop, ev_io* _w, int revents)
         }
         upload_data = upload_data_new;
     }
+
+    time_t cur_tm = time(0);
+    if (cur_tm < last_snap_tm + 5)
+    {
+        free(upload_data->buf);
+        free(upload_data);
+        log_warn("snap flood detected");
+        return;
+    }
+
+    last_snap_tm = cur_tm;
 
     if (upload_data) evcurl_new_UPLOAD(g_evcurl_proc, upload_data, PUT_snap_req_end_cb);
     log_info("DONE ONE JPEG");
