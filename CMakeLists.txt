@@ -16,7 +16,7 @@ include_directories(libev)
 message(STATUS "Architecture: ${CMAKE_SYSTEM_PROCESSOR}")
 
 add_library(aux STATIC aux/logger.c aux/system.c)
-add_library(cfg STATIC cfg/common.c cfg/sensor_config.c cfg/sensor_cfg_print.c)
+add_library(cfg STATIC cfg/common.c)
 add_library(libevx STATIC libev/ev.c)
 add_library(evcurl STATIC evcurl/evcurl.c)
 add_library(evgpio STATIC evgpio/evgpio.c)
