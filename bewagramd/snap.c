@@ -50,33 +50,37 @@ extern struct DaemonConfig g_dcfg;
 
 static void PUT_snap_req_end_cb(evcurl_req_result_t* res, void* src_req_data)
 {
-    log_info("PUT snap Req DONE: %d\n", res->result);
+    log_info("PUT snap Req DONE: %d", res->result);
     struct evcurl_upload_req_s* put_req = (struct evcurl_upload_req_s*)src_req_data;
-    log_info("    upload data sz was %u\n", put_req->sz_buf);
-    log_info("    effective URL: %s\n", res->effective_url);
-    log_info("    %ld\n", res->response_code);
-    log_info("    Content-Type: %s\n", res->content_type ? res->content_type : "(none)");
+    log_info("    upload data sz was %u", put_req->sz_buf);
+    log_info("    effective URL: %s", res->effective_url);
+    log_info("    %ld", res->response_code);
+    log_info("    Content-Type: %s", res->content_type ? res->content_type : "(none)");
 
     if (!res->sz_body) return;
 
-    log_info("\n\n%.*s\n--------------------------------------------------------------\n", (int)res->sz_body, (const char*)res->body);
+    log_info("\n\n%.*s\n--------------------------------------------------------------", (int)res->sz_body, (const char*)res->body);
 
     free(put_req->buf);
     free(put_req);
 }
 
-static void __venc_snap_cb(struct ev_loop *loop, ev_io* _w, int revents)
+static struct evcurl_upload_req_s* snap_get_upload_data()
 {
-    log_info("event on fd = VENC: 0x%x ()", revents);
-    hitiny_MPI_VENC_StopRecvPic(SNAP_VENC_CHN_ID);
-
     VENC_CHN_STAT_S stStat;
     VENC_STREAM_S stStream;
 
     hitiny_MPI_VENC_Query(SNAP_VENC_CHN_ID, &stStat);
     stStream.pstPack = (VENC_PACK_S*)malloc(sizeof(VENC_PACK_S) * stStat.u32CurPacks);
     stStream.u32PackCount = stStat.u32CurPacks;
-    hitiny_MPI_VENC_GetStream(SNAP_VENC_CHN_ID, &stStream, HI_FALSE);
+    int ret = hitiny_MPI_VENC_GetStream(SNAP_VENC_CHN_ID, &stStream, HI_FALSE);
+    if (ret)
+    {
+        free(stStream.pstPack);
+        stStream.pstPack = NULL;
+
+        return 0;
+    }
 
     struct evcurl_upload_req_s* upload_data = (struct evcurl_upload_req_s*)malloc(sizeof(struct evcurl_upload_req_s));
     upload_data->sz_buf = 0;
@@ -101,7 +105,6 @@ static void __venc_snap_cb(struct ev_loop *loop, ev_io* _w, int revents)
 
     upload_data->ptr = upload_data->buf;
     upload_data->url = g_dcfg.snap.http_PUT_snap_url;
-    evcurl_new_UPLOAD(g_evcurl_proc, upload_data, PUT_snap_req_end_cb);
 
     log_info("%u from 0x%x to 0x%x", upload_data->sz_buf, upload_data->buf, upload_data->ptr);
 
@@ -109,6 +112,30 @@ static void __venc_snap_cb(struct ev_loop *loop, ev_io* _w, int revents)
     free(stStream.pstPack);
     stStream.pstPack = NULL;
 
+    return upload_data;
+}
+
+static void __venc_snap_cb(struct ev_loop *loop, ev_io* _w, int revents)
+{
+    log_info("event on fd = VENC: 0x%x ()", revents);
+    hitiny_MPI_VENC_StopRecvPic(SNAP_VENC_CHN_ID);
+
+    struct evcurl_upload_req_s* upload_data = 0;
+
+    while (1)
+    {
+        struct evcurl_upload_req_s* upload_data_new = snap_get_upload_data();
+        if (!upload_data_new) break;
+
+        if (upload_data)
+        {
+            free(upload_data->buf);
+            free(upload_data);
+        }
+        upload_data = upload_data_new;
+    }
+
+    if (upload_data) evcurl_new_UPLOAD(g_evcurl_proc, upload_data, PUT_snap_req_end_cb);
     log_info("DONE ONE JPEG");
 }
 
