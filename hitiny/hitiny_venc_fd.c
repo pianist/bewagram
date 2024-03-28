@@ -460,17 +460,18 @@ int hitiny_MPI_VENC_GetStream(VENC_CHN VeChn, VENC_STREAM_S *pstStream, HI_BOOL 
     HI_BOOL bBlockMode = bBlockFlag;
     int ret;
 
-    ret = ioctl(fd, 0x40044512u, &bBlockMode);
+    ret = ioctl(fd, 0x40044512, &bBlockMode);
     if (ret)
     {
         log_error("hitiny_MPI_VENC_GetStream: ioctl 0x40044512 failed");
         return ret;
     }
 
-    ret = ioctl(fd, 0xC040450Cu, pstStream);
+    ret = ioctl(fd, 0xC040450C, pstStream);
     if (ret)
     {
-        log_error("hitiny_MPI_VENC_GetStream: ioctl 0xC040450Cu failed");
+        // do not log 0xa007800e error, this means "no stream" if bBlockMode is false
+        if (0xa007800e != ret) log_error("hitiny_MPI_VENC_GetStream: ioctl 0xC040450C failed");
         return ret;
     }
 
