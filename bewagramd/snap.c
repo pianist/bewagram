@@ -149,6 +149,13 @@ static void __venc_snap_cb(struct ev_loop *loop, ev_io* _w, int revents)
     last_snap_tm = cur_tm;
 
     if (upload_data) evcurl_new_UPLOAD(g_evcurl_proc, upload_data, PUT_snap_req_end_cb);
+
+    ev_io_stop(loop, &venc_snap_ev_io);
+
+    hitiny_MPI_VENC_StopRecvPic(SNAP_VENC_CHN_ID);
+    hitiny_MPI_VENC_UnRegisterChn(SNAP_VENC_CHN_ID);
+    hitiny_MPI_VENC_DestroyChn(SNAP_VENC_CHN_ID);
+
     log_info("DONE ONE JPEG");
 }
 
@@ -174,26 +181,29 @@ int init_snap_machine(struct ev_loop* loop, const struct DaemonConfig* dc)
         return s32Ret;
     }
 
+    return 0;
+}
+
+int run_jpeg_snap(struct ev_loop* loop, unsigned w, unsigned h)
+{
     VENC_CHN_ATTR_S stVencChnAttr;
     VENC_ATTR_JPEG_S stJpegAttr;
 
     stVencChnAttr.stVeAttr.enType = PT_JPEG;
 
-    stJpegAttr.u32MaxPicWidth  = dc->snap.width;
-    stJpegAttr.u32MaxPicHeight = dc->snap.height;
-    stJpegAttr.u32PicWidth  = dc->snap.width;
-    stJpegAttr.u32PicHeight = dc->snap.height;
-    stJpegAttr.u32BufSize = dc->snap.width * dc->snap.height * 2;
+    stJpegAttr.u32MaxPicWidth  = w;
+    stJpegAttr.u32MaxPicHeight = h;
+    stJpegAttr.u32PicWidth  = w;
+    stJpegAttr.u32PicHeight = h;
+    stJpegAttr.u32BufSize = w * h * 2;
     stJpegAttr.bByFrame = HI_TRUE;
     stJpegAttr.bVIField = HI_FALSE;
     stJpegAttr.u32Priority = 0;
     memcpy(&stVencChnAttr.stVeAttr.stAttrJpeg, &stJpegAttr, sizeof(VENC_ATTR_JPEG_S));
 
-    s32Ret = hitiny_MPI_VENC_CreateChn(SNAP_VENC_CHN_ID, &stVencChnAttr);
+    int s32Ret = hitiny_MPI_VENC_CreateChn(SNAP_VENC_CHN_ID, &stVencChnAttr);
     if (HI_SUCCESS != s32Ret) {
         log_error("HI_MPI_VENC_CreateChn failed with %#x!", s32Ret);
-        hitiny_sys_unbind_VPSS_GROUP(0, (int)dc->snap.vpss_chn, SNAP_VENC_GRP_ID);
-        hitiny_MPI_VENC_DestroyGroup(SNAP_VENC_GRP_ID);
         return s32Ret;
     }
 
@@ -201,8 +211,6 @@ int init_snap_machine(struct ev_loop* loop, const struct DaemonConfig* dc)
     if (HI_SUCCESS != s32Ret) {
         log_error("HI_MPI_VENC_RegisterChn failed with %#x!", s32Ret);
         hitiny_MPI_VENC_DestroyChn(SNAP_VENC_CHN_ID);
-        hitiny_sys_unbind_VPSS_GROUP(0, (int)dc->snap.vpss_chn, SNAP_VENC_GRP_ID);
-        hitiny_MPI_VENC_DestroyGroup(SNAP_VENC_GRP_ID);
         return s32Ret;
     }
 
@@ -212,31 +220,17 @@ int init_snap_machine(struct ev_loop* loop, const struct DaemonConfig* dc)
         log_error("HI_MPI_VENC_GetFd failed with %#x!\n", s32Ret);
         hitiny_MPI_VENC_UnRegisterChn(SNAP_VENC_CHN_ID);
         hitiny_MPI_VENC_DestroyChn(SNAP_VENC_CHN_ID);
-        hitiny_sys_unbind_VPSS_GROUP(0, (int)dc->snap.vpss_chn, SNAP_VENC_GRP_ID);
-        hitiny_MPI_VENC_DestroyGroup(SNAP_VENC_GRP_ID);
         return fd;
     }
 
     ev_io_init(&venc_snap_ev_io, __venc_snap_cb, fd, EV_READ);
     ev_io_start(loop, &venc_snap_ev_io);
 
-    hitiny_MPI_VENC_StartRecvPic(SNAP_VENC_CHN_ID);
-
-    return 0;
-}
-
-void snap_machine_TAKE()
-{
-    hitiny_MPI_VENC_StartRecvPic(SNAP_VENC_CHN_ID);
+    return hitiny_MPI_VENC_StartRecvPic(SNAP_VENC_CHN_ID);
 }
 
 int done_snap_machine(struct ev_loop* loop, const struct DaemonConfig* dc)
 {
-    ev_io_stop(loop, &venc_snap_ev_io);
-
-    hitiny_MPI_VENC_StopRecvPic(SNAP_VENC_CHN_ID);
-    hitiny_MPI_VENC_UnRegisterChn(SNAP_VENC_CHN_ID);
-    hitiny_MPI_VENC_DestroyChn(SNAP_VENC_CHN_ID);
     hitiny_sys_unbind_VPSS_GROUP(0, (int)dc->snap.vpss_chn, SNAP_VENC_GRP_ID);
     hitiny_MPI_VENC_DestroyGroup(SNAP_VENC_GRP_ID);
 

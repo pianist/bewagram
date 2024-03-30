@@ -7,7 +7,8 @@
 int init_snap_machine(struct ev_loop* loop, const struct DaemonConfig* dc);
 int done_snap_machine(struct ev_loop* loop, const struct DaemonConfig* dc);
 
-void snap_machine_TAKE();
+int run_jpeg_snap(struct ev_loop* loop, unsigned w, unsigned h);
+
 
 #endif
 
