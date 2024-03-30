@@ -22,7 +22,7 @@
 static int init_snap_machine_checkcfg(const struct DaemonConfig* dc)
 {
     CHECK_VALUE_BETWEEN(dc->snap.width, "snap width", 160, 1280)
-    CHECK_VALUE_BETWEEN(dc->snap.height, "snap height", 90, 720)
+    CHECK_VALUE_BETWEEN(dc->snap.height, "snap height", 90, 960)
 
     if (dc->snap.vpss_chn == VPSS_CHN_UNSET)
     {
@@ -165,6 +165,15 @@ int init_snap_machine(struct ev_loop* loop, const struct DaemonConfig* dc)
         return s32Ret;
     }
 
+    s32Ret = hitiny_sys_bind_VPSS_GROUP(0, (int)dc->snap.vpss_chn, SNAP_VENC_GRP_ID);
+        if (HI_SUCCESS != s32Ret) {
+        log_error("BIND VPSS to GRP failed with %#x!", s32Ret);
+        hitiny_MPI_VENC_UnRegisterChn(SNAP_VENC_CHN_ID);
+        hitiny_MPI_VENC_DestroyChn(SNAP_VENC_CHN_ID);
+        hitiny_MPI_VENC_DestroyGroup(SNAP_VENC_GRP_ID);
+        return s32Ret;
+    }
+
     VENC_CHN_ATTR_S stVencChnAttr;
     VENC_ATTR_JPEG_S stJpegAttr;
 
@@ -190,15 +199,6 @@ int init_snap_machine(struct ev_loop* loop, const struct DaemonConfig* dc)
     s32Ret = hitiny_MPI_VENC_RegisterChn(SNAP_VENC_GRP_ID, SNAP_VENC_CHN_ID);
     if (HI_SUCCESS != s32Ret) {
         log_error("HI_MPI_VENC_RegisterChn failed with %#x!", s32Ret);
-        hitiny_MPI_VENC_DestroyChn(SNAP_VENC_CHN_ID);
-        hitiny_MPI_VENC_DestroyGroup(SNAP_VENC_GRP_ID);
-        return s32Ret;
-    }
-
-    s32Ret = hitiny_sys_bind_VPSS_GROUP(0, (int)dc->snap.vpss_chn, SNAP_VENC_GRP_ID);
-        if (HI_SUCCESS != s32Ret) {
-        log_error("BIND VPSS to GRP failed with %#x!", s32Ret);
-        hitiny_MPI_VENC_UnRegisterChn(SNAP_VENC_CHN_ID);
         hitiny_MPI_VENC_DestroyChn(SNAP_VENC_CHN_ID);
         hitiny_MPI_VENC_DestroyGroup(SNAP_VENC_GRP_ID);
         return s32Ret;
