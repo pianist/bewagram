@@ -95,7 +95,7 @@ int main(int argc, char** argv)
     if (!no_deamon_mode)
     {
         char buf[128];
-        snprintf(buf, 128, "/tmp/bewagram.log");
+        snprintf(buf, 128, "/tmp/bewagramd.log");
         log_info("Daemonize and log to %s", buf);
         log_create(buf, LOG_info);
 
