@@ -143,12 +143,13 @@ static void __venc_snap_cb(struct ev_loop *loop, ev_io* _w, int revents)
         free(upload_data->buf);
         free(upload_data);
         log_warn("snap flood detected");
-        return;
+    }
+    else
+    {
+        evcurl_new_UPLOAD(g_evcurl_proc, upload_data, PUT_snap_req_end_cb);
     }
 
     last_snap_tm = cur_tm;
-
-    if (upload_data) evcurl_new_UPLOAD(g_evcurl_proc, upload_data, PUT_snap_req_end_cb);
 
     ev_io_stop(loop, &venc_snap_ev_io);
 
