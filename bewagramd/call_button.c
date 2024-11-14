@@ -19,13 +19,27 @@ extern int stop_flag;
 
 int playmusic_audio_init()
 {
+    if (!g_dcfg.audio.majestic_compatible[0])
+    {
+        log_error("[audio] majestic_compatible is not set, valid values are yes|no");
+        return -1;
+    }
+
+    unsigned audio_bitrate = g_dcfg.audio.bitrate;
+    if ((audio_bitrate != 8000) && (audio_bitrate != 16000) && (audio_bitrate != 48000))
+    {
+        log_error("[audio] bitrate is not set correctly, should be 8000, 16000, 32000 or 48000");
+        return -1;
+    }
+
     AUDIO_DEV AoDev = 0;
     AO_CHN AoChn = 0;
 
     AIO_ATTR_S stAioAttr;
     memset(&stAioAttr, 0, sizeof(AIO_ATTR_S));
 
-    stAioAttr.enSamplerate = 48000;
+    int ret = 0;
+    stAioAttr.enSamplerate = audio_bitrate;
     stAioAttr.enBitwidth = AUDIO_BIT_WIDTH_16;
     stAioAttr.enWorkmode = AIO_MODE_I2S_MASTER;
     stAioAttr.enSoundmode = AUDIO_SOUND_MODE_MONO;
@@ -33,13 +47,22 @@ int playmusic_audio_init()
     stAioAttr.u32FrmNum = 30;
     stAioAttr.u32PtNumPerFrm = AUDIO_PTNUMPERFRM;
     stAioAttr.u32ChnCnt = 2;
-    stAioAttr.u32ClkSel = 1;
+    stAioAttr.u32ClkSel = 0;
 
-    int ret = hitiny_init_acodec(48000, HI_TRUE);
-    if (ret < 0)
+    char majcompat = g_dcfg.audio.majestic_compatible[0]; 
+    if ((majcompat != 'Y') && (majcompat != 'y'))
     {
-        log_error("hitiny_init_acodec() failed: 0x%X", ret);
-        return -1;
+        log_info("DO init acodec, no majestic (or other audio) compatible");
+        ret = hitiny_init_acodec(audio_bitrate, HI_TRUE);
+        if (ret < 0)
+        {
+            log_error("hitiny_init_acodec() failed: 0x%X", ret);
+            return -1;
+        }
+    }
+    else
+    {
+        log_info("DO NOT init acodec, majestic compatible");
     }
 
     ret = hitiny_MPI_AO_Init();
@@ -55,6 +78,7 @@ int playmusic_audio_init()
         log_error("hitiny_MPI_AO_DisableDev: 0x%X", ret);
         return ret;
     }
+
     ret = hitiny_MPI_AO_SetPubAttr(0, &stAioAttr);
     if (ret < 0)
     {

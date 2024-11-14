@@ -10,6 +10,7 @@
 #include "hi_common.h"
 
 static int fd_sys = -1;
+static int fd_vpss = -1;
 
 int hitiny_MPI_SYS_Init()
 {
@@ -26,6 +27,12 @@ int hitiny_MPI_SYS_Init()
 
 void hitiny_MPI_SYS_Done()
 {
+    if (fd_vpss != -1)
+    {
+        close(fd_vpss);
+        fd_vpss = -1;
+    }
+
     if (fd_sys != -1)
     {
 // We do NOT stop sys, because other daemons are working hard, we are not main daemon
@@ -33,6 +40,31 @@ void hitiny_MPI_SYS_Done()
         close(fd_sys);
         fd_sys = -1;
     }
+}
+
+int hitiny_MPI_VPSS_EnableChn(unsigned int vpss_grp, unsigned int vpss_chnl)
+{
+    if (vpss_grp > 127) return 0xA0088001;
+    if (vpss_chnl > 7) return 0xA0088002;
+
+    int fd = open("/dev/vpss", 0);
+    if (fd < 0) return 0xA0088010;
+
+    unsigned param = ((unsigned char)vpss_chnl) + ((unsigned char)vpss_grp << 16);
+
+    int ret = ioctl(fd, 0x4004502F, &param);
+    if (ret)
+    {
+        log_error("ERROR: can't ioctl(%d, 0x4004502F, ...): %d, %d (%s)", fd, ret, errno, strerror(errno));
+        close(fd);
+        return 0xA0088010;
+    }
+
+    ret = ioctl(fd, 0x5007);
+
+    close(fd);
+
+    return ret;
 }
 
 typedef struct hitiny_sys_bind_param_s

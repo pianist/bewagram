@@ -173,6 +173,14 @@ int init_snap_machine(struct ev_loop* loop, const struct DaemonConfig* dc)
         return s32Ret;
     }
 
+    s32Ret = hitiny_MPI_VPSS_EnableChn(0, dc->snap.vpss_chn);
+    if (HI_SUCCESS != s32Ret)
+    {
+        log_error("MPI_VPSS_EnableChn failed with %#x!", s32Ret);
+        hitiny_MPI_VENC_DestroyGroup(SNAP_VENC_GRP_ID);
+        return s32Ret;
+    }
+
     s32Ret = hitiny_sys_bind_VPSS_GROUP(0, (int)dc->snap.vpss_chn, SNAP_VENC_GRP_ID);
         if (HI_SUCCESS != s32Ret) {
         log_error("BIND VPSS to GRP failed with %#x!", s32Ret);

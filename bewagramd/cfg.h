@@ -2,6 +2,11 @@
 
 #include <cfg/common.h>
 
+struct Audio_Device {
+    char majestic_compatible[4];
+    unsigned bitrate;
+};
+
 struct Device_GPIOs {
     int day_night_sensor;
     int call_button;
@@ -32,6 +37,7 @@ struct SnapConfig {
 };
 
 struct DaemonConfig {
+    struct Audio_Device audio;
     struct Device_GPIOs gpio;
     struct ButtonConfig button;
     struct SnapConfig snap;

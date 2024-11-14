@@ -9,6 +9,7 @@
 #define SECTION_gpio        1
 #define SECTION_button      2
 #define SECTION_snap        3
+#define SECTION_audio       4
 
 static int __cfg_daemon_current_section = 0;
 static char __cfg_daemon_error_key[32];
@@ -31,6 +32,7 @@ static int __cfg_daemon_read_section_cb(const char* s)
     ADD_SECTION(gpio)
     ADD_SECTION(button)
     ADD_SECTION(snap)
+    ADD_SECTION(audio)
 
     snprintf(__cfg_daemon_error_value, 256, "%s", s);
     return CFG_PROC_WRONG_SECTION;
@@ -76,6 +78,15 @@ struct DaemonConfig* __current_dc = 0;
         return CFG_PROC_VALUE_BAD;                                              \
     }
 
+static int __cfg_daemon_read_keyval_cb_audio(const char* k, const char* v)
+{
+    KEYVAL_PARAM_COPY_STR("majestic_compatible", __current_dc->audio.majestic_compatible, 3);
+    KEYVAL_PARAM_UL_dec("bitrate", __current_dc->audio.bitrate);
+
+    snprintf(__cfg_daemon_error_key, 256, "%s", k);
+    return CFG_PROC_KEY_BAD;
+}
+
 static int __cfg_daemon_read_keyval_cb_gpio(const char* k, const char* v)
 {
     KEYVAL_PARAM_SL_dec("day_night_sensor", __current_dc->gpio.day_night_sensor)
@@ -115,6 +126,7 @@ static int __cfg_daemon_read_keyval_cb(const char* k, const char* v)
 {
     switch (__cfg_daemon_current_section)
     {
+        KEYVAL_CASE(audio)
         KEYVAL_CASE(gpio)
         KEYVAL_CASE(button)
         KEYVAL_CASE(snap)

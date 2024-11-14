@@ -7,6 +7,9 @@ void hitiny_MPI_SYS_Done();
 int hitiny_sys_bind_VPSS_GROUP(int vpss_dev_id, int vpss_chn_id, int grp_id);
 int hitiny_sys_unbind_VPSS_GROUP(int vpss_dev_id, int vpss_chn_id, int grp_id);
 
+int hitiny_MPI_VPSS_EnableChn(unsigned int vpss_grp, unsigned int vpss_chnl);
+int hitiny_MPI_VPSS_DisableChn(unsigned int vpss_grp, unsigned int vpss_chnl);
+
 int hitiny_open_dev(const char* fname);
 
 #endif // __HITINY_SYS_H__
