@@ -63,7 +63,7 @@ static void timeout_cb(struct ev_loop *loop, ev_timer* w, int revents)
 
 int main(int argc, char** argv)
 {
-    int no_deamon_mode = 0;
+    int no_daemon_mode = 0;
     int cfg_default = 1;
 
     if (argc > 1)
@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 
         if (!strcmp(argv[1], "--no-daemon"))
         {
-            no_deamon_mode = 1;
+            no_daemon_mode = 1;
             if (argc > 2) cfg_default = 0;
         }
         
@@ -92,7 +92,7 @@ int main(int argc, char** argv)
         return ret;
     }
 
-    if (!no_deamon_mode)
+    if (!no_daemon_mode)
     {
         char buf[128];
         snprintf(buf, 128, "/tmp/bewagramd.log");
